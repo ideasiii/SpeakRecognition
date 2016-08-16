@@ -1,6 +1,7 @@
 package org.iii.speakrecognition;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,6 +18,10 @@ public class MainActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		this.getActionBar().hide();
+
 		setContentView(R.layout.activity_main);
 
 		voice = VoiceRecognition.getInstance(this);
@@ -29,9 +34,15 @@ public class MainActivity extends Activity
 	@Override
 	protected void onPause()
 	{
+		super.onPause();
+	}
+
+	@Override
+	protected void onDestroy()
+	{
 		voice.stop();
 		voice.destroy();
-		super.onPause();
+		super.onDestroy();
 	}
 
 	OnClickListener itemClick = new OnClickListener()
@@ -44,10 +55,12 @@ public class MainActivity extends Activity
 				mbSpeak = mbSpeak ? false : true;
 				if (mbSpeak)
 				{
+					btnSpeak.setImageResource(R.drawable.mic_on);
 					voice.start();
 				}
 				else
 				{
+					btnSpeak.setImageResource(R.drawable.mic_off);
 					voice.stop();
 				}
 			}
