@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">SpeakRecognition</string>
+    <string name="tap_on_mic">點擊麥克風開始</string>
+    <string name="contentDescription"></string>
+
+</resources>
