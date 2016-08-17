@@ -1,6 +1,8 @@
 package org.iii.speakrecognition;
 
 import java.util.ArrayList;
+import java.util.Locale;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -12,11 +14,12 @@ import android.util.SparseArray;
 
 public class VoiceRecognition implements RecognitionListener
 {
-	static private VoiceRecognition				voiceRecognition		= null;
-	private String								LOG_TAG					= "VoiceRecognition";
-	private SpeechRecognizer					speech					= null;
-	private Intent								recognizerIntent;
-	private SparseArray<OnRecognitionResult>	listOnRecognitionResult	= null;
+	static private VoiceRecognition	voiceRecognition	= null;
+	private String					LOG_TAG				= "VoiceRecognition";
+	private SpeechRecognizer		speech				= null;
+	private Intent					recognizerIntent;
+	private OnRecognitionResult		RecognitionResult	= null;
+	private Context					theContext			= null;
 
 	/**
 	 * Speech result callback.
@@ -28,38 +31,38 @@ public class VoiceRecognition implements RecognitionListener
 
 	public void setOnRecognitionResultListener(OnRecognitionResult listener)
 	{
-		if (null != listener)
-		{
-			listOnRecognitionResult.put(listOnRecognitionResult.size(), listener);
-		}
+		RecognitionResult = listener;
 	}
 
 	private void callbackRecognitionResult(final int nErrorCode, final SparseArray<String> listResult)
 	{
-		for (int i = 0; i < listOnRecognitionResult.size(); ++i)
+		if (null != RecognitionResult)
 		{
-			if (null != listOnRecognitionResult.get(i))
-			{
-				listOnRecognitionResult.get(i).onRecognitionResult(nErrorCode, listResult);
-			}
+			RecognitionResult.onRecognitionResult(nErrorCode, listResult);
 		}
 	}
 
 	private VoiceRecognition(Context context)
 	{
+		theContext = context;
+	}
+
+	public void init(Context context)
+	{
+		Log.i(LOG_TAG, "speech init");
+		if (null != speech)
+		{
+			speech.stopListening();
+			speech.destroy();
+		}
+		promptSpeechInput();
 		speech = SpeechRecognizer.createSpeechRecognizer(context);
 		speech.setRecognitionListener(this);
 		recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "zh-TW");
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-		// recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-		// RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-
-		// 回傳語音辨識有多少結果段落 (沒有設定, 回傳全部段落)
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-
-		listOnRecognitionResult = new SparseArray<OnRecognitionResult>();
 	}
 
 	static VoiceRecognition getInstance(Context context)
@@ -79,6 +82,10 @@ public class VoiceRecognition implements RecognitionListener
 			speech.startListening(recognizerIntent);
 			Log.i(LOG_TAG, "speech start");
 		}
+		else
+		{
+			init(theContext);
+		}
 	}
 
 	public void stop()
@@ -94,6 +101,7 @@ public class VoiceRecognition implements RecognitionListener
 	{
 		if (speech != null)
 		{
+			speech.cancel();
 			speech.destroy();
 			speech = null;
 			Log.i(LOG_TAG, "destroy");
@@ -137,6 +145,10 @@ public class VoiceRecognition implements RecognitionListener
 	{
 		String errorMessage = getErrorText(error);
 		Log.d(LOG_TAG, "FAILED " + errorMessage);
+		SparseArray<String> listResult = new SparseArray<String>();
+		listResult.put(0, "�y�����ѥ���");
+		listResult.put(1, errorMessage);
+		callbackRecognitionResult(error, listResult);
 	}
 
 	@Override
@@ -153,6 +165,7 @@ public class VoiceRecognition implements RecognitionListener
 		}
 
 		callbackRecognitionResult(0, listResult);
+
 		Log.i(LOG_TAG, text);
 		listResult = null;
 
@@ -209,5 +222,15 @@ public class VoiceRecognition implements RecognitionListener
 			break;
 		}
 		return message;
+	}
+
+	/**
+	 * Showing google speech input dialog
+	 * */
+	private void promptSpeechInput()
+	{
+		Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+		intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+		intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
 	}
 }
