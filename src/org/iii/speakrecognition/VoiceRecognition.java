@@ -15,10 +15,11 @@ import android.util.SparseArray;
 public class VoiceRecognition implements RecognitionListener
 {
 	static private VoiceRecognition	voiceRecognition	= null;
-	private String					LOG_TAG				= "VoiceRecognition";
-	private SpeechRecognizer		speech				= null;
-	private Intent					recognizerIntent;
+	static private String			LOG_TAG				= "VoiceRecognition";
+	static private SpeechRecognizer	speech				= null;
+	static private Intent			recognizerIntent;
 	private OnRecognitionResult		RecognitionResult	= null;
+	private OnRmsResult				rmsResult			= null;
 	private Context					theContext			= null;
 
 	/**
@@ -40,9 +41,31 @@ public class VoiceRecognition implements RecognitionListener
 		{
 			RecognitionResult.onRecognitionResult(nErrorCode, listResult);
 		}
+		speech.destroy();
 	}
 
-	private VoiceRecognition(Context context)
+	/**
+	 * RMS Callback
+	 */
+	public static interface OnRmsResult
+	{
+		void onRms(float fRms);
+	}
+
+	public void setOnRmsResultListener(OnRmsResult listener)
+	{
+		rmsResult = listener;
+	}
+
+	private void callbackRmsResult(float fRms)
+	{
+		if (null != rmsResult)
+		{
+			rmsResult.onRms(fRms);
+		}
+	}
+
+	public VoiceRecognition(Context context)
 	{
 		theContext = context;
 	}
@@ -55,14 +78,19 @@ public class VoiceRecognition implements RecognitionListener
 			speech.stopListening();
 			speech.destroy();
 		}
-		promptSpeechInput();
+		//promptSpeechInput();
 		speech = SpeechRecognizer.createSpeechRecognizer(context);
 		speech.setRecognitionListener(this);
 		recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+
+		if (!recognizerIntent.hasExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE))
+		{
+			recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, "com.dummy");
+		}
 	}
 
 	static VoiceRecognition getInstance(Context context)
@@ -70,6 +98,7 @@ public class VoiceRecognition implements RecognitionListener
 		if (null == voiceRecognition)
 		{
 			voiceRecognition = new VoiceRecognition(context);
+			Log.i(LOG_TAG, "new VoiceRecognition Object");
 		}
 
 		return voiceRecognition;
@@ -79,12 +108,16 @@ public class VoiceRecognition implements RecognitionListener
 	{
 		if (speech != null)
 		{
+			speech.stopListening();
+			speech.destroy();
+			init(theContext);
 			speech.startListening(recognizerIntent);
 			Log.i(LOG_TAG, "speech start");
 		}
 		else
 		{
 			init(theContext);
+			speech.startListening(recognizerIntent);
 		}
 	}
 
@@ -125,7 +158,7 @@ public class VoiceRecognition implements RecognitionListener
 	@Override
 	public void onRmsChanged(float rmsdB)
 	{
-		// Log.i(LOG_TAG, "onRmsChanged: " + rmsdB);
+		callbackRmsResult(rmsdB);
 	}
 
 	@Override
@@ -187,14 +220,11 @@ public class VoiceRecognition implements RecognitionListener
 
 	public static String getErrorText(int errorCode)
 	{
-		String message;
+		String message = "無法辨識";
 		switch (errorCode)
 		{
 		case SpeechRecognizer.ERROR_AUDIO:
 			message = "Audio recording error";
-			break;
-		case SpeechRecognizer.ERROR_CLIENT:
-			message = "Client side error";
 			break;
 		case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
 			message = "Insufficient permissions";
@@ -205,11 +235,10 @@ public class VoiceRecognition implements RecognitionListener
 		case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
 			message = "Network timeout";
 			break;
-		case SpeechRecognizer.ERROR_NO_MATCH:
-			message = "No match";
-			break;
+		case SpeechRecognizer.ERROR_CLIENT:
 		case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
-			message = "RecognitionService busy";
+		case SpeechRecognizer.ERROR_NO_MATCH:
+			message = "無法辨識";
 			break;
 		case SpeechRecognizer.ERROR_SERVER:
 			message = "error from server";
