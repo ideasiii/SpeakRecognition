@@ -20,6 +20,7 @@ public class VoiceRecognition implements RecognitionListener
 	static private Intent			recognizerIntent;
 	private OnRecognitionResult		RecognitionResult	= null;
 	private OnRmsResult				rmsResult			= null;
+	private OnPartialResult			partialResult		= null;
 	private Context					theContext			= null;
 
 	/**
@@ -65,6 +66,28 @@ public class VoiceRecognition implements RecognitionListener
 		}
 	}
 
+	/**
+	 *  Partial Result Callback
+	 * 
+	 */
+	public static interface OnPartialResult
+	{
+		void onPartialResult(final String strResult);
+	}
+
+	public void setOnPartialResultListener(OnPartialResult listener)
+	{
+		partialResult = listener;
+	}
+
+	private void callbackPartialResult(final String strResult)
+	{
+		if (null != partialResult)
+		{
+			partialResult.onPartialResult(strResult);
+		}
+	}
+
 	public VoiceRecognition(Context context)
 	{
 		theContext = context;
@@ -82,10 +105,14 @@ public class VoiceRecognition implements RecognitionListener
 		speech = SpeechRecognizer.createSpeechRecognizer(context);
 		speech.setRecognitionListener(this);
 		recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
+		//	recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SECURE, false);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_WEB_SEARCH_ONLY, true);
 
 		if (!recognizerIntent.hasExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE))
 		{
@@ -106,19 +133,10 @@ public class VoiceRecognition implements RecognitionListener
 
 	public void start()
 	{
-		if (speech != null)
-		{
-			speech.stopListening();
-			speech.destroy();
-			init(theContext);
-			speech.startListening(recognizerIntent);
-			Log.i(LOG_TAG, "speech start");
-		}
-		else
-		{
-			init(theContext);
-			speech.startListening(recognizerIntent);
-		}
+		destroy();
+		init(theContext);
+		speech.startListening(recognizerIntent);
+		Log.i(LOG_TAG, "speech start");
 	}
 
 	public void stop()
@@ -134,6 +152,7 @@ public class VoiceRecognition implements RecognitionListener
 	{
 		if (speech != null)
 		{
+			speech.stopListening();
 			speech.cancel();
 			speech.destroy();
 			speech = null;
@@ -146,7 +165,6 @@ public class VoiceRecognition implements RecognitionListener
 	public void onReadyForSpeech(Bundle params)
 	{
 		Log.i(LOG_TAG, "onReadyForSpeech");
-
 	}
 
 	@Override
@@ -207,8 +225,11 @@ public class VoiceRecognition implements RecognitionListener
 	@Override
 	public void onPartialResults(Bundle partialResults)
 	{
-		Log.i(LOG_TAG, "onPartialResults");
-
+		ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+		if (null != matches && 0 < matches.size())
+		{
+			callbackPartialResult(matches.get(matches.size() - 1));
+		}
 	}
 
 	@Override

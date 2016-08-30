@@ -1,6 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <color name="white">#ffffff</color>
     <color name="bg_gradient_start">#123456</color>
     <color name="bg_gradient_end">#789ABC</color>
+    <color name="Black">#FF000000</color>
+    <color name="Black_Gray">#EE303030</color>
+    <color name="Black_List">#FF171717</color>
+    <color name="Black_Gray_Deep">#FF666666</color>
+    <color name="Blue">#01B4F5</color>
+    <color name="Blue_Word">#FF2AA4D5</color>
+    <color name="Brown_Light">#FFC2B1A1</color>
+    <color name="DEEP_Blue">#197FA5</color>
+    <color name="Focus_Blue">#FF4CAFDD</color>
+    <color name="Gray">#ff999999</color>
+    <color name="Gray_Black">#FF626262</color>
+    <color name="Gray_Black2">#FF707070</color>
+    <color name="Gray_White">#FFD8D8D8</color>
+    <color name="Gray_White2">#FFF6F6F6</color>
+    <color name="List_BG">#FF222222</color>
+    <color name="Orange_Yellow">#FDF003</color>
+    <color name="Orange_Deep">#FFD17D58</color>
+    <color name="Trans_Black">#4c000000</color>
+    <color name="White">#FFFFFFFF</color>
+    <color name="com_facebook_button_background_color">#415dae</color>
+    <color name="com_facebook_button_background_color_disabled">#bdc1c9</color>
+    <color name="com_facebook_button_background_color_pressed">#2f477a</color>
+    <color name="com_facebook_button_like_background_color_selected">#7c8fc8</color>
+    <color name="com_facebook_button_login_silver_background_color">#f4f6f8</color>
+    <color name="com_facebook_button_login_silver_background_color_pressed">#e9eaf0</color>
+    <color name="com_facebook_button_send_background_color">#0084ff</color>
+    <color name="com_facebook_button_send_background_color_pressed">#006fff</color>
+
 </resources>

@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string name="facebook_app_id">1682812001970032</string>
     <string name="app_name">SpeakRecognition</string>
     <string name="tap_on_mic">點擊麥克風開始</string>
     <string name="contentDescription"></string>
+    <string name="skip">略過</string>
+    <string name="title">標題</string>
+    <string name="message">訊息</string>
+    <string name="error">錯誤</string>
+    <string name="network_error">目前網路異常無法連線</string>
+    <string name="cancel">取消</string>
+    <string name="ok">確定</string>
+    <string name="attention">注意</string>
 
 </resources>

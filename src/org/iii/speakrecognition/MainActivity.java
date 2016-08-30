@@ -1,9 +1,16 @@
 package org.iii.speakrecognition;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.iii.speakrecognition.VoiceRecognition.OnPartialResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRecognitionResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRmsResult;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,64 +23,142 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import sdk.ideas.common.Logs;
+import sdk.ideas.common.OnCallbackResult;
+import sdk.ideas.tool.premisson.RuntimePermissionHandler;
 
 public class MainActivity extends Activity
 {
-
-	private VoiceRecognition	voice		= null;
-	private ImageButton			btnSpeak	= null;
-	private TextView			tvSpeech	= null;
-	private boolean				mbSpeak		= false;
-	private String				strText		= "";
-	private ProgressBar			progressBar;
+	private ImageButton					btnSpeak					= null;
+	private TextView					tvSpeech					= null;
+	private boolean						mbSpeak						= false;
+	private String						strText						= "";
+	private ProgressBar					progressBar;
+	private FacebookHandler				facebook					= null;
+	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
+	private MainApplication				mainApplication				= null;
+	final private int					TIMEOUT_SPEECH				= 15000;	//million seconds
+	private HttpClient					httpClient					= null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
+		mainApplication = (MainApplication) this.getApplication();
+
 		super.onCreate(savedInstanceState);
 
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		this.getActionBar().hide();
 
+		ArrayList<String> permissions = new ArrayList<String>();
+		permissions.add(Manifest.permission.RECORD_AUDIO);
+		permissions.add(Manifest.permission.INTERNET);
+		permissions.add(Manifest.permission.ACCESS_NETWORK_STATE);
+		permissions.add(Manifest.permission.ACCESS_WIFI_STATE);
+		permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+		permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+		permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+		permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+		permissions.add(Manifest.permission.ACCESS_LOCATION_EXTRA_COMMANDS);
+
+		mRuntimePermissionHandler = new RuntimePermissionHandler(this, permissions);
+		mRuntimePermissionHandler.startRequestPermissions();
+		mRuntimePermissionHandler.setOnCallbackResultListener(new OnCallbackResult()
+		{
+
+			@Override
+			public void onCallbackResult(int result, int what, int from, HashMap<String, String> message)
+			{
+				Logs.showTrace("what: " + String.valueOf(what) + " Message: " + message);
+			}
+
+		});
+		showLogin();
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+	{
+		MainActivity.this.mRuntimePermissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		FacebookHandler.callbackManager.onActivityResult(requestCode, resultCode, data);
+	}
+
+	private void showLogin()
+	{
+
+		setContentView(R.layout.login);
+		findViewById(R.id.textViewLoginFacebook).setOnClickListener(new OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
+				if (Utility.checkInternet(MainActivity.this))
+				{
+					showFacebookLogin();
+				}
+				else
+				{
+					DialogHandler.showNetworkError(MainActivity.this, false, handler);
+				}
+			}
+		});
+		findViewById(R.id.textViewLoginSkip).setOnClickListener(new OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
+				showSpeech();
+			}
+		});
+	}
+
+	private void showSpeech()
+	{
 		setContentView(R.layout.activity_main);
-
-		voice = new VoiceRecognition(this);
-
 		btnSpeak = (ImageButton) this.findViewById(R.id.btnSpeak);
 		btnSpeak.setOnClickListener(itemClick);
 		tvSpeech = (TextView) this.findViewById(R.id.txtSpeechInput);
 
-		voice.setOnRecognitionResultListener(RecognitionListener);
-
+		mainApplication.setOnRecognitionResultListener(RecognitionListener);
 		progressBar = (ProgressBar) findViewById(R.id.progressBarSpeech);
 		progressBar.setMax(10);
-
-		voice.setOnRmsResultListener(rmsResult);
+		mainApplication.setOnRmsResultListener(rmsResult);
+		mainApplication.setOnPartialResultListener(partialResult);
 	}
 
-	@Override
-	protected void onPause()
+	private void showFacebookLogin()
 	{
-		voice.stop();
-		//voice.destroy();
-		super.onPause();
+		Logs.showTrace("Facebook Login Start");
 
-	}
+		facebook = new FacebookHandler(this);
+		facebook.init();
+		facebook.setOnFacebookLoginResultListener(new FacebookHandler.OnFacebookLoginResult()
+		{
+			@Override
+			public void onLoginResult(String strFBID, String strName, String strEmail, int nErrorCode, String strError)
+			{
+				Logs.showTrace("get facebook FBID: " + strFBID + " Token: " + facebook.getToken());
+				switch (nErrorCode)
+				{
+				case FacebookHandler.ERR_SUCCESS:
+				case FacebookHandler.ERR_SIGNED:
+					showSpeech();
+					break;
+				case FacebookHandler.ERR_EXCEPTION:
+					break;
+				case FacebookHandler.ERR_CANCEL:
+					DialogHandler.showAlert(MainActivity.this, strError, false, handler);
+					break;
 
-	@Override
-	protected void onResume()
-	{
-		//	voice.init(this);
-		//	voice.start();
-		super.onResume();
-	}
-
-	@Override
-	protected void onDestroy()
-	{
-		//	voice.stop();
-		//	voice.destroy();
-		super.onDestroy();
+				}
+			}
+		});
+		facebook.login();
 	}
 
 	OnClickListener		itemClick			= new OnClickListener()
@@ -83,21 +168,17 @@ public class MainActivity extends Activity
 												{
 													if (v.getId() == R.id.btnSpeak)
 													{
-														mbSpeak = mbSpeak ? false : true;
-														if (mbSpeak)
+														//mbSpeak = mbSpeak ? false : true;
+
+														if (!mbSpeak)
 														{
+															tvSpeech.setText("");
+															mbSpeak = true;
 															progressBar.setIndeterminate(false);
 															btnSpeak.setImageResource(R.drawable.mic_on);
-															voice.start();
-															handler.sendEmptyMessageDelayed(666, 3000);
-															tvSpeech.setText("");
-														}
-														else
-														{
-															progressBar.setIndeterminate(true);
+															mainApplication.speechStart();
+															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
 
-															//	btnSpeak.setImageResource(R.drawable.mic_off);
-															//	voice.stop();
 														}
 													}
 												}
@@ -117,7 +198,7 @@ public class MainActivity extends Activity
 														progressBar.setIndeterminate(false);
 														tvSpeech.setText("無法辨識，再試一次");
 														btnSpeak.setImageResource(R.drawable.mic_on);
-														voice.start();
+														mainApplication.speechStart();
 														handler.sendEmptyMessageDelayed(666, 3000);
 														return;
 													}
@@ -129,12 +210,14 @@ public class MainActivity extends Activity
 
 													if (0 == nErrorCode)
 													{
-														for (int i = 0; i < listResult.size(); ++i)
-														{
-															strText += listResult.get(i);
-															strText += "\n";
-														}
+														//														for (int i = 0; i < listResult.size(); ++i)
+														//														{
+														//															strText += listResult.get(i);
+														//															strText += "\n";
+														//														}
 
+														// get first string
+														strText = listResult.get(0);
 														tvSpeech.setText(strText);
 													}
 													Logs.showTrace(strText);
@@ -149,6 +232,18 @@ public class MainActivity extends Activity
 												public void onRms(float fRms)
 												{
 													progressBar.setProgress((int) fRms);
+													//Logs.showTrace(String.valueOf(fRms));
+												}
+
+											};
+
+	OnPartialResult		partialResult		= new OnPartialResult()
+											{
+
+												@Override
+												public void onPartialResult(String strResult)
+												{
+													Logs.showTrace("Partial Result: " + strResult);
 												}
 
 											};
@@ -162,12 +257,11 @@ public class MainActivity extends Activity
 												{
 													if (msg.what == 666)
 													{
+														mbSpeak = false;
 														btnSpeak.setImageResource(R.drawable.mic_off);
-														voice.stop();
-														tvSpeech.setText(strText);
-
+														mainApplication.speechStop();
+														//	tvSpeech.setText(strText);
 														progressBar.setIndeterminate(true);
-
 													}
 												}
 
