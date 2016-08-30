@@ -112,13 +112,22 @@ public class MainActivity extends Activity
 			@Override
 			public void onClick(View v)
 			{
-				showSpeech();
+				if (Utility.checkInternet(MainActivity.this))
+				{
+					showSpeech();
+				}
+				else
+				{
+					DialogHandler.showNetworkError(MainActivity.this, false, handler);
+				}
 			}
 		});
 	}
 
 	private void showSpeech()
 	{
+		httpClient = new HttpClient();
+
 		setContentView(R.layout.activity_main);
 		btnSpeak = (ImageButton) this.findViewById(R.id.btnSpeak);
 		btnSpeak.setOnClickListener(itemClick);
