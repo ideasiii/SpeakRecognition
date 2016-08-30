@@ -2,7 +2,7 @@ package org.iii.speakrecognition;
 
 import org.iii.speakrecognition.VoiceRecognition.OnRecognitionResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRmsResult;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -153,6 +153,7 @@ public class MainActivity extends Activity
 
 											};
 
+	@SuppressLint("HandlerLeak")
 	private Handler		handler				= new Handler()
 											{
 
