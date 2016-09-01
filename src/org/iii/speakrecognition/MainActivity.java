@@ -2,7 +2,9 @@ package org.iii.speakrecognition;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import org.iii.speakrecognition.HttpClient.HttpResponseListener;
 import org.iii.speakrecognition.VoiceRecognition.OnPartialResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRecognitionResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRmsResult;
@@ -36,8 +38,10 @@ public class MainActivity extends Activity
 	private FacebookHandler				facebook					= null;
 	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
 	private MainApplication				mainApplication				= null;
-	final private int					TIMEOUT_SPEECH				= 15000;	//million seconds
+	final private int					TIMEOUT_SPEECH				= 7000;					//million seconds
 	private HttpClient					httpClient					= null;
+	private final String				TARGET_HOST					= "http://jieba.srm.pw";
+	private final String				PATH_API_JIEBA				= "/jieba/pos";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -73,6 +77,7 @@ public class MainActivity extends Activity
 
 		});
 		showLogin();
+
 	}
 
 	@Override
@@ -126,8 +131,6 @@ public class MainActivity extends Activity
 
 	private void showSpeech()
 	{
-		httpClient = new HttpClient();
-
 		setContentView(R.layout.activity_main);
 		btnSpeak = (ImageButton) this.findViewById(R.id.btnSpeak);
 		btnSpeak.setOnClickListener(itemClick);
@@ -138,6 +141,9 @@ public class MainActivity extends Activity
 		progressBar.setMax(10);
 		mainApplication.setOnRmsResultListener(rmsResult);
 		mainApplication.setOnPartialResultListener(partialResult);
+
+		httpClient = new HttpClient();
+		httpClient.setOnHttpResponseListener(httpResponse);
 	}
 
 	private void showFacebookLogin()
@@ -170,109 +176,140 @@ public class MainActivity extends Activity
 		facebook.login();
 	}
 
-	OnClickListener		itemClick			= new OnClickListener()
-											{
-												@Override
-												public void onClick(View v)
+	OnClickListener			itemClick			= new OnClickListener()
 												{
-													if (v.getId() == R.id.btnSpeak)
+													@Override
+													public void onClick(View v)
 													{
-														//mbSpeak = mbSpeak ? false : true;
-
-														if (!mbSpeak)
+														if (v.getId() == R.id.btnSpeak)
 														{
-															tvSpeech.setText("");
-															mbSpeak = true;
+															//mbSpeak = mbSpeak ? false : true;
+
+															if (!mbSpeak)
+															{
+																tvSpeech.setText("");
+																mbSpeak = true;
+																progressBar.setIndeterminate(false);
+																btnSpeak.setImageResource(R.drawable.mic_on);
+																mainApplication.speechStart();
+																handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+
+															}
+														}
+													}
+												};
+
+	OnRecognitionResult		RecognitionListener	= new OnRecognitionResult()
+												{
+													@Override
+													public void onRecognitionResult(int nErrorCode,
+															SparseArray<String> listResult)
+													{
+														tvSpeech.setText("");
+														strText = "";
+
+														if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
+														{
 															progressBar.setIndeterminate(false);
+															tvSpeech.setText("無法辨識，再試一次");
 															btnSpeak.setImageResource(R.drawable.mic_on);
 															mainApplication.speechStart();
-														//	handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+															return;
+														}
+
+														if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
+														{
+															return;
+														}
+
+														if (0 == nErrorCode)
+														{
+															for (int i = 0; i < listResult.size(); ++i)
+															{
+																strText += listResult.get(i);
+																strText += "\n";
+															}
+
+															// get first string
+															strText = listResult.get(0);
+
+															tvSpeech.setText(strText);
+
+															httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
+																	strText);
+														}
+														Logs.showTrace(strText);
+
+													}
+												};
+
+	OnRmsResult				rmsResult			= new OnRmsResult()
+												{
+
+													@Override
+													public void onRms(float fRms)
+													{
+														progressBar.setProgress((int) fRms);
+														//Logs.showTrace(String.valueOf(fRms));
+													}
+
+												};
+
+	OnPartialResult			partialResult		= new OnPartialResult()
+												{
+
+													@Override
+													public void onPartialResult(String strResult)
+													{
+														Logs.showTrace("Partial Result: " + strResult);
+													}
+
+												};
+
+	@SuppressLint("HandlerLeak")
+	private Handler			handler				= new Handler()
+												{
+
+													@Override
+													public void handleMessage(Message msg)
+													{
+														if (msg.what == 666)
+														{
+															mbSpeak = false;
+															btnSpeak.setImageResource(R.drawable.mic_off);
+															mainApplication.speechStop();
+															//	tvSpeech.setText(strText);
+															progressBar.setIndeterminate(true);
+														}
+
+														if (msg.what == 777)
+														{
+															tvSpeech.setText((String) msg.obj);
+														}
+													}
+
+												};
+
+	HttpResponseListener	httpResponse		= new HttpResponseListener()
+												{
+
+													@Override
+													public void response(int nId, int nCode, String strContent)
+													{
+														Logs.showTrace("HTTP RESPONSE - Code:" + String.valueOf(nCode)
+																+ " Content:" + strContent + " ID: "
+																+ String.valueOf(nId));
+
+														if (200 == nCode)
+														{
+															Message msg = new Message();
+															msg.what = 777;
+															msg.obj = strContent;
+															handler.sendMessage(msg);
 
 														}
 													}
-												}
-											};
 
-	OnRecognitionResult	RecognitionListener	= new OnRecognitionResult()
-											{
-												@Override
-												public void onRecognitionResult(int nErrorCode,
-														SparseArray<String> listResult)
-												{
-													tvSpeech.setText("");
-													strText = "";
-
-													if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
-													{
-														progressBar.setIndeterminate(false);
-														tvSpeech.setText("無法辨識，再試一次");
-														btnSpeak.setImageResource(R.drawable.mic_on);
-														mainApplication.speechStart();
-													//	handler.sendEmptyMessageDelayed(666, 3000);
-														return;
-													}
-
-													if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
-													{
-														return;
-													}
-
-													if (0 == nErrorCode)
-													{
-														//														for (int i = 0; i < listResult.size(); ++i)
-														//														{
-														//															strText += listResult.get(i);
-														//															strText += "\n";
-														//														}
-
-														// get first string
-														strText = listResult.get(0);
-														tvSpeech.setText(strText);
-													}
-													Logs.showTrace(strText);
-
-												}
-											};
-
-	OnRmsResult			rmsResult			= new OnRmsResult()
-											{
-
-												@Override
-												public void onRms(float fRms)
-												{
-													progressBar.setProgress((int) fRms);
-													//Logs.showTrace(String.valueOf(fRms));
-												}
-
-											};
-
-	OnPartialResult		partialResult		= new OnPartialResult()
-											{
-
-												@Override
-												public void onPartialResult(String strResult)
-												{
-													Logs.showTrace("Partial Result: " + strResult);
-												}
-
-											};
-
-	@SuppressLint("HandlerLeak")
-	private Handler		handler				= new Handler()
-											{
-
-												@Override
-												public void handleMessage(Message msg)
-												{
-													if (msg.what == 666)
-													{
-														mbSpeak = false;
-														btnSpeak.setImageResource(R.drawable.mic_off);
-														mainApplication.speechStop();
-														//	tvSpeech.setText(strText);
-														progressBar.setIndeterminate(true);
-													}
-												}
-
-											};
+												};
 }
