@@ -8,6 +8,9 @@ import org.iii.speakrecognition.HttpClient.HttpResponseListener;
 import org.iii.speakrecognition.VoiceRecognition.OnPartialResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRecognitionResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRmsResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -38,7 +41,8 @@ public class MainActivity extends Activity
 	private FacebookHandler				facebook					= null;
 	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
 	private MainApplication				mainApplication				= null;
-	final private int					TIMEOUT_SPEECH				= 7000;					//million seconds
+	final private int					TIMEOUT_SPEECH				= 7000;					// million
+																							// seconds
 	private HttpClient					httpClient					= null;
 	private final String				TARGET_HOST					= "http://jieba.srm.pw";
 	private final String				PATH_API_JIEBA				= "/jieba/pos";
@@ -183,7 +187,8 @@ public class MainActivity extends Activity
 													{
 														if (v.getId() == R.id.btnSpeak)
 														{
-															//mbSpeak = mbSpeak ? false : true;
+															// mbSpeak = mbSpeak
+															// ? false : true;
 
 															if (!mbSpeak)
 															{
@@ -211,7 +216,7 @@ public class MainActivity extends Activity
 														if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
 														{
 															progressBar.setIndeterminate(false);
-															tvSpeech.setText("µLªk¿ëÃÑ¡A¦A¸Õ¤@¦¸");
+															tvSpeech.setText("ï¿½Lï¿½kï¿½ï¿½ï¿½Ñ¡Aï¿½Aï¿½Õ¤@ï¿½ï¿½");
 															btnSpeak.setImageResource(R.drawable.mic_on);
 															mainApplication.speechStart();
 															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
@@ -251,7 +256,7 @@ public class MainActivity extends Activity
 													public void onRms(float fRms)
 													{
 														progressBar.setProgress((int) fRms);
-														//Logs.showTrace(String.valueOf(fRms));
+														// Logs.showTrace(String.valueOf(fRms));
 													}
 
 												};
@@ -279,13 +284,27 @@ public class MainActivity extends Activity
 															mbSpeak = false;
 															btnSpeak.setImageResource(R.drawable.mic_off);
 															mainApplication.speechStop();
-															//	tvSpeech.setText(strText);
+															
 															progressBar.setIndeterminate(true);
 														}
 
 														if (msg.what == 777)
 														{
-															tvSpeech.setText((String) msg.obj);
+															try
+															{
+																JSONArray jarry = new JSONArray((String) msg.obj);
+																tvSpeech.setText(jarry.toString());
+																Logs.showTrace(jarry.toString());
+															}
+															catch (Exception e)
+															{
+																// TODO
+																// Auto-generated
+																// catch block
+																e.printStackTrace();
+																Logs.showError(e.getMessage());
+															}
+															
 														}
 													}
 

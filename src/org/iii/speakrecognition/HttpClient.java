@@ -41,7 +41,8 @@ public class HttpClient
 
 	/**
 	 * 
-	 * @param listener : HttpResponseListener
+	 * @param listener
+	 *            : HttpResponseListener
 	 */
 	public void setOnHttpResponseListener(HttpResponseListener listener)
 	{
@@ -80,9 +81,12 @@ public class HttpClient
 
 	/**
 	 * 
-	 * @param nId : callback id
-	 * @param strTargetURL : HTTP target URL
-	 * @param mapParameters : HTTP POST method parameters
+	 * @param nId
+	 *            : callback id
+	 * @param strTargetURL
+	 *            : HTTP target URL
+	 * @param mapParameters
+	 *            : HTTP POST method parameters
 	 */
 	public void httpPost(final int nId, final String strTargetURL, final HashMap<String, String> mapParameters)
 	{
@@ -106,9 +110,12 @@ public class HttpClient
 
 	/**
 	 * 
-	 * @param nId : callback id
-	 * @param strTargetURL : HTTP target URL
-	 * @param strData : Raw Data 
+	 * @param nId
+	 *            : callback id
+	 * @param strTargetURL
+	 *            : HTTP target URL
+	 * @param strData
+	 *            : Raw Data
 	 */
 	public void httpPostRaw(final int nId, final String strTargetURL, final String strData)
 	{
@@ -132,9 +139,12 @@ public class HttpClient
 
 	/**
 	 * 
-	 * @param nId : callback id
-	 * @param strTargetURL : Target URL
-	 * @param mapParameters : HTTP GET method parameters
+	 * @param nId
+	 *            : callback id
+	 * @param strTargetURL
+	 *            : Target URL
+	 * @param mapParameters
+	 *            : HTTP GET method parameters
 	 */
 	public void httpGet(final int nId, final String strTargetURL, final HashMap<String, String> mapParameters)
 	{
@@ -244,10 +254,8 @@ public class HttpClient
 				connection.setRequestProperty("Content-Language", "UTF-8");
 				break;
 			case RAW:
-				//connection.setRequestProperty("Cache-Control", "no-cache");
 				connection.setRequestProperty("Content-Type", "application/raw; charset=UTF-8");
 				connection.setRequestProperty("Content-Language", "UTF-8");
-				//	connection.setRequestProperty("Content-Length", String.valueOf(strParameters.length()));
 				break;
 			default:
 
@@ -259,30 +267,14 @@ public class HttpClient
 			connection.setDoOutput(true);
 
 			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-			//wr.writeBytes(strParameters);
-			//wr.writeChars(strParameters);
+			// wr.writeBytes(strParameters);
 			wr.write(strParameters.getBytes());
 			wr.flush();
 			wr.close();
 
 			httpResponse.nCode = connection.getResponseCode();
 			InputStream is = connection.getInputStream();
-			String strXX = convertStreamToString(is, "UTF-8");
-			
-			//BufferedReader rd = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-			//BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-//			String line;
-//			StringBuffer response = new StringBuffer();
-//			while ((line = rd.readLine()) != null)
-//			{
-//				response.append(line);
-//				response.append('\r');
-//			}
-//			rd.close();
-
-			
-
-			httpResponse.strContent = strXX;//response.toString();
+			httpResponse.strContent = convertStreamToString(is, "UTF-8");
 		}
 		catch (Exception e)
 		{
