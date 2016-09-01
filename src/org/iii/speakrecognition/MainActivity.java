@@ -186,7 +186,7 @@ public class MainActivity extends Activity
 															progressBar.setIndeterminate(false);
 															btnSpeak.setImageResource(R.drawable.mic_on);
 															mainApplication.speechStart();
-															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+														//	handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
 
 														}
 													}
@@ -208,7 +208,7 @@ public class MainActivity extends Activity
 														tvSpeech.setText("無法辨識，再試一次");
 														btnSpeak.setImageResource(R.drawable.mic_on);
 														mainApplication.speechStart();
-														handler.sendEmptyMessageDelayed(666, 3000);
+													//	handler.sendEmptyMessageDelayed(666, 3000);
 														return;
 													}
 

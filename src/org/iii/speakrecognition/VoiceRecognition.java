@@ -22,6 +22,7 @@ public class VoiceRecognition implements RecognitionListener
 	private OnRmsResult				rmsResult			= null;
 	private OnPartialResult			partialResult		= null;
 	private Context					theContext			= null;
+	static float					fSlienceSum			= 0;
 
 	/**
 	 * Speech result callback.
@@ -105,10 +106,10 @@ public class VoiceRecognition implements RecognitionListener
 		speech = SpeechRecognizer.createSpeechRecognizer(context);
 		speech.setRecognitionListener(this);
 		recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		//	recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SECURE, false);
@@ -176,6 +177,15 @@ public class VoiceRecognition implements RecognitionListener
 	@Override
 	public void onRmsChanged(float rmsdB)
 	{
+
+		if (-2 == rmsdB)
+			fSlienceSum += rmsdB;
+
+		if (-38 >= fSlienceSum)
+		{
+			fSlienceSum = 0;
+			Log.i(LOG_TAG, "slience...........................");
+		}
 		callbackRmsResult(rmsdB);
 	}
 
@@ -225,10 +235,20 @@ public class VoiceRecognition implements RecognitionListener
 	@Override
 	public void onPartialResults(Bundle partialResults)
 	{
-		ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-		if (null != matches && 0 < matches.size())
+		if (null != partialResults)
 		{
-			callbackPartialResult(matches.get(matches.size() - 1));
+			ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+			if (null != matches)
+			{
+				for (int i = 0; i < matches.size(); ++i)
+				{
+					if (null != matches.get(i))
+					{
+						callbackPartialResult(matches.get(i));
+					}
+				}
+			}
 		}
 	}
 
