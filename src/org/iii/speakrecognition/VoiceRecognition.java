@@ -207,7 +207,7 @@ public class VoiceRecognition implements RecognitionListener
 		String errorMessage = getErrorText(error);
 		Log.d(LOG_TAG, "FAILED " + errorMessage);
 		SparseArray<String> listResult = new SparseArray<String>();
-		listResult.put(0, "»y­µ¿ëÃÑ¥¢±Ñ");
+		listResult.put(0, "ç„¡æ³•è¾¨è­˜");
 		listResult.put(1, errorMessage);
 		callbackRecognitionResult(error, listResult);
 	}
@@ -261,7 +261,7 @@ public class VoiceRecognition implements RecognitionListener
 
 	public static String getErrorText(int errorCode)
 	{
-		String message = "µLªk¿ëÃÑ";
+		String message = "ç„¡æ³•è¾¨è­˜";
 		switch (errorCode)
 		{
 		case SpeechRecognizer.ERROR_AUDIO:
@@ -279,7 +279,7 @@ public class VoiceRecognition implements RecognitionListener
 		case SpeechRecognizer.ERROR_CLIENT:
 		case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
 		case SpeechRecognizer.ERROR_NO_MATCH:
-			message = "µLªk¿ëÃÑ";
+			message = "ç„¡æ³•è¾¨è­˜";
 			break;
 		case SpeechRecognizer.ERROR_SERVER:
 			message = "error from server";

@@ -45,8 +45,8 @@ public class MainActivity extends Activity
 	private FacebookHandler				facebook					= null;
 	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
 	private MainApplication				mainApplication				= null;
-	final private int					TIMEOUT_SPEECH				= 7000;					// million
-												// seconds
+	final private int					TIMEOUT_SPEECH				= 1000;					// million
+	// seconds
 	private HttpClient					httpClient					= null;
 	private final String				TARGET_HOST					= "http://jieba.srm.pw";
 	private final String				PATH_API_JIEBA				= "/jieba/pos";
@@ -201,7 +201,7 @@ public class MainActivity extends Activity
 																progressBar.setIndeterminate(false);
 																btnSpeak.setImageResource(R.drawable.mic_on);
 																mainApplication.speechStart();
-																handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+																//	handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
 
 															}
 														}
@@ -216,40 +216,36 @@ public class MainActivity extends Activity
 													{
 														tvSpeech.setText("");
 														strText = "";
-
-														if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
+														for (int i = 0; i < listResult.size(); ++i)
 														{
-															progressBar.setIndeterminate(false);
-															tvSpeech.setText("�L�k���ѡA�A�դ@��");
-															btnSpeak.setImageResource(R.drawable.mic_on);
-															mainApplication.speechStart();
-															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
-															return;
-														}
-
-														if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
-														{
-															return;
+															strText += listResult.get(i);
+															strText += "\n";
 														}
 
 														if (0 == nErrorCode)
 														{
-															for (int i = 0; i < listResult.size(); ++i)
-															{
-																strText += listResult.get(i);
-																strText += "\n";
-															}
-
-															// get first string
-															strText = listResult.get(0);
-
-															tvSpeech.setText(strText);
-
+															// parse first string
 															httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
-																	strText);
+																	listResult.get(0));
 														}
+														tvSpeech.setText(strText);
+														handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
 														Logs.showTrace(strText);
 
+														//														if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
+														//														{
+														//															progressBar.setIndeterminate(false);
+														//															tvSpeech.setText("無法辨識");
+														//															btnSpeak.setImageResource(R.drawable.mic_on);
+														//															mainApplication.speechStart();
+														//															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+														//															return;
+														//														}
+														//
+														//														if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
+														//														{
+														//															return;
+														//														}
 													}
 												};
 
@@ -271,7 +267,16 @@ public class MainActivity extends Activity
 													@Override
 													public void onPartialResult(String strResult)
 													{
-														Logs.showTrace("Partial Result: " + strResult);
+
+														if (null != strResult && 0 < strResult.length())
+														{
+															Logs.showTrace("Partial Result: " + strResult);
+															if (strResult.contains("Google OK"))
+															{
+																String strReplace = strResult.replace("OK Google", "");
+																strReplace = strReplace.replace("Google OK", "");
+															}
+														}
 													}
 
 												};
@@ -288,8 +293,14 @@ public class MainActivity extends Activity
 															mbSpeak = false;
 															btnSpeak.setImageResource(R.drawable.mic_off);
 															mainApplication.speechStop();
-
 															progressBar.setIndeterminate(true);
+
+															// restart
+															tvSpeech.setText("");
+															mbSpeak = true;
+															progressBar.setIndeterminate(false);
+															btnSpeak.setImageResource(R.drawable.mic_on);
+															mainApplication.speechStart();
 														}
 
 														if (msg.what == 777)
