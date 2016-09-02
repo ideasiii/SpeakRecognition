@@ -251,23 +251,21 @@ public class HttpClient
 			case X_WWW_FORM:
 				connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				connection.setRequestProperty("Content-Length", "" + Integer.toString(strParameters.getBytes().length));
-				connection.setRequestProperty("Content-Language", "UTF-8");
 				break;
 			case RAW:
 				connection.setRequestProperty("Content-Type", "application/raw; charset=UTF-8");
-				connection.setRequestProperty("Content-Language", "UTF-8");
 				break;
 			default:
 
 				break;
 			}
-
+			connection.setRequestProperty("Content-Language", "UTF-8");
 			connection.setUseCaches(false);
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 
 			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-			// wr.writeBytes(strParameters);
+			//wr.writeBytes(strParameters);
 			wr.write(strParameters.getBytes());
 			wr.flush();
 			wr.close();

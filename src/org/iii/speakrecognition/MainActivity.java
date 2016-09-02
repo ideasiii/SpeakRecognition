@@ -1,3 +1,7 @@
+/**
+ * 中文編碼用
+ */
+
 package org.iii.speakrecognition;
 
 import java.util.ArrayList;
@@ -42,7 +46,7 @@ public class MainActivity extends Activity
 	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
 	private MainApplication				mainApplication				= null;
 	final private int					TIMEOUT_SPEECH				= 7000;					// million
-																							// seconds
+												// seconds
 	private HttpClient					httpClient					= null;
 	private final String				TARGET_HOST					= "http://jieba.srm.pw";
 	private final String				PATH_API_JIEBA				= "/jieba/pos";
@@ -284,7 +288,7 @@ public class MainActivity extends Activity
 															mbSpeak = false;
 															btnSpeak.setImageResource(R.drawable.mic_off);
 															mainApplication.speechStop();
-															
+
 															progressBar.setIndeterminate(true);
 														}
 
@@ -304,7 +308,7 @@ public class MainActivity extends Activity
 																e.printStackTrace();
 																Logs.showError(e.getMessage());
 															}
-															
+
 														}
 													}
 
