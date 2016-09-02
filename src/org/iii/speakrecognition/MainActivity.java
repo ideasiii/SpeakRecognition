@@ -225,8 +225,8 @@ public class MainActivity extends Activity
 														if (0 == nErrorCode)
 														{
 															// parse first string
-															httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
-																	listResult.get(0));
+															//httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
+															//		listResult.get(0));
 														}
 														tvSpeech.setText(strText);
 														handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
@@ -275,6 +275,9 @@ public class MainActivity extends Activity
 															{
 																String strReplace = strResult.replace("OK Google", "");
 																strReplace = strReplace.replace("Google OK", "");
+																Logs.showTrace("Parse: " + strReplace);
+																httpClient.httpPostRaw(777,
+																		TARGET_HOST + PATH_API_JIEBA, strReplace);
 															}
 														}
 													}
