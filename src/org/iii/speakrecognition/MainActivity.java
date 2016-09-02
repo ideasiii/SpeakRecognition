@@ -4,52 +4,98 @@
 
 package org.iii.speakrecognition;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-
+import java.util.Map;
 import org.iii.speakrecognition.HttpClient.HttpResponseListener;
 import org.iii.speakrecognition.VoiceRecognition.OnPartialResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRecognitionResult;
 import org.iii.speakrecognition.VoiceRecognition.OnRmsResult;
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.speech.SpeechRecognizer;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import sdk.ideas.common.CtrlType;
 import sdk.ideas.common.Logs;
 import sdk.ideas.common.OnCallbackResult;
-import sdk.ideas.tool.premisson.RuntimePermissionHandler;
+import sdk.ideas.common.ResponseCode;
 
 public class MainActivity extends Activity
 {
-	private ImageButton					btnSpeak					= null;
-	private TextView					tvSpeech					= null;
-	private boolean						mbSpeak						= false;
-	private String						strText						= "";
-	private ProgressBar					progressBar;
-	private FacebookHandler				facebook					= null;
-	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
-	private MainApplication				mainApplication				= null;
-	final private int					TIMEOUT_SPEECH				= 1000;					// million
+	private ImageButton btnSpeak = null;
+	private TextView tvSpeech = null;
+	private boolean mbSpeak = false;
+	private String strText = "";
+	private ProgressBar progressBar;
+	private FacebookHandler facebook = null;
+	private MainApplication mainApplication = null;
+	final private int TIMEOUT_SPEECH = 1000; // million
 	// seconds
-	private HttpClient					httpClient					= null;
-	private final String				TARGET_HOST					= "http://jieba.srm.pw";
-	private final String				PATH_API_JIEBA				= "/jieba/pos";
+	private HttpClient httpClient = null;
+	private final String TARGET_HOST = "http://jieba.srm.pw";
+	private final String PATH_API_JIEBA = "/jieba/pos";
+
+	OnCallbackResult permissionOnCallbackResultListener = new OnCallbackResult()
+	{
+
+		@Override
+		public void onCallbackResult(int result, int what, int from, HashMap<String, String> message)
+		{
+			boolean needAskAgainRequest = false;
+			boolean neverAskAgain = false;
+			for (Map.Entry<String, String> map : message.entrySet())
+			{
+				if (map.getValue().equals("0"))
+				{
+					needAskAgainRequest = true;
+				}
+				else if (map.getValue().equals("-1"))
+				{
+					neverAskAgain = true;
+				}
+			}
+			if (needAskAgainRequest == true)
+			{
+				showMessageOKCancel("You need to allow Permissions", new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						mainApplication.startRequestPermissions(MainActivity.this, permissionOnCallbackResultListener);
+					}
+				});
+			}
+			else if (neverAskAgain == true)
+			{
+				showMessageOKCancel("由於你勾選never permission ask, 本程式無法再執行下去QAQ", new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						MainActivity.this.finish();
+					}
+				});
+			}
+		}
+
+	};
+
+	private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener)
+	{
+		new AlertDialog.Builder(MainActivity.this).setMessage(message).setPositiveButton("OK", okListener).create()
+				.show();
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -61,29 +107,8 @@ public class MainActivity extends Activity
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		this.getActionBar().hide();
 
-		ArrayList<String> permissions = new ArrayList<String>();
-		permissions.add(Manifest.permission.RECORD_AUDIO);
-		permissions.add(Manifest.permission.INTERNET);
-		permissions.add(Manifest.permission.ACCESS_NETWORK_STATE);
-		permissions.add(Manifest.permission.ACCESS_WIFI_STATE);
-		permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-		permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-		permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-		permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-		permissions.add(Manifest.permission.ACCESS_LOCATION_EXTRA_COMMANDS);
+		mainApplication.startRequestPermissions(this, permissionOnCallbackResultListener);
 
-		mRuntimePermissionHandler = new RuntimePermissionHandler(this, permissions);
-		mRuntimePermissionHandler.startRequestPermissions();
-		mRuntimePermissionHandler.setOnCallbackResultListener(new OnCallbackResult()
-		{
-
-			@Override
-			public void onCallbackResult(int result, int what, int from, HashMap<String, String> message)
-			{
-				Logs.showTrace("what: " + String.valueOf(what) + " Message: " + message);
-			}
-
-		});
 		showLogin();
 
 	}
@@ -91,7 +116,7 @@ public class MainActivity extends Activity
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
 	{
-		MainActivity.this.mRuntimePermissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		mainApplication.onRequestPermissionsResult(requestCode, permissions, grantResults);
 	}
 
 	@Override
@@ -152,6 +177,10 @@ public class MainActivity extends Activity
 
 		httpClient = new HttpClient();
 		httpClient.setOnHttpResponseListener(httpResponse);
+
+		mainApplication.setTTSOnCallbackResultListener(ttsOnCallbackResultListener);
+		mainApplication.setTTSInit();
+
 	}
 
 	private void showFacebookLogin()
@@ -184,172 +213,274 @@ public class MainActivity extends Activity
 		facebook.login();
 	}
 
-	OnClickListener			itemClick			= new OnClickListener()
-												{
-													@Override
-													public void onClick(View v)
-													{
-														if (v.getId() == R.id.btnSpeak)
-														{
-															// mbSpeak = mbSpeak
-															// ? false : true;
+	OnCallbackResult ttsOnCallbackResultListener = new OnCallbackResult()
+	{
 
-															if (!mbSpeak)
-															{
-																tvSpeech.setText("");
-																mbSpeak = true;
-																progressBar.setIndeterminate(false);
-																btnSpeak.setImageResource(R.drawable.mic_on);
-																mainApplication.speechStart();
-																//	handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+		@Override
+		public void onCallbackResult(int result, int what, int from, HashMap<String, String> message)
+		{
+			switch (what)
+			{
+			case CtrlType.MSG_RESPONSE_TEXT_TO_SPEECH_HANDLER:
+				Logs.showTrace("result:" + result + " what:" + what + " from:" + from + " message:" + message);
 
-															}
-														}
-													}
-												};
+				if (from == ResponseCode.METHOD_TEXT_TO_SPEECH_INIT)
+				{
+					switch (result)
+					{
+					case ResponseCode.ERR_PACKAGE_NOT_FIND:
+						// Android Google TTS APK 沒有安裝
 
-	OnRecognitionResult		RecognitionListener	= new OnRecognitionResult()
-												{
-													@Override
-													public void onRecognitionResult(int nErrorCode,
-															SparseArray<String> listResult)
-													{
-														tvSpeech.setText("");
-														strText = "";
-														for (int i = 0; i < listResult.size(); ++i)
-														{
-															strText += listResult.get(i);
-															strText += "\n";
-														}
+						break;
+					case ResponseCode.ERR_FILE_NOT_FOUND_EXCEPTION:
+						// 離線包未下載，而且無網路可以線上轉語音
 
-														if (0 == nErrorCode)
-														{
-															// parse first string
-															//httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
-															//		listResult.get(0));
-														}
-														tvSpeech.setText(strText);
-														handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
-														Logs.showTrace(strText);
+						break;
+					case ResponseCode.ERR_UNKNOWN:
+						// 未知錯誤
 
-														//														if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
-														//														{
-														//															progressBar.setIndeterminate(false);
-														//															tvSpeech.setText("無法辨識");
-														//															btnSpeak.setImageResource(R.drawable.mic_on);
-														//															mainApplication.speechStart();
-														//															handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
-														//															return;
-														//														}
-														//
-														//														if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
-														//														{
-														//															return;
-														//														}
-													}
-												};
+						break;
+					case ResponseCode.ERR_SUCCESS:
+						// 成功初始化，能進行下一步驟
+						
+						break;
+					default:
 
-	OnRmsResult				rmsResult			= new OnRmsResult()
-												{
+						break;
 
-													@Override
-													public void onRms(float fRms)
-													{
-														progressBar.setProgress((int) fRms);
-														// Logs.showTrace(String.valueOf(fRms));
-													}
+					}
 
-												};
+				}
+				else if (from == ResponseCode.METHOD_TEXT_TO_SPEECH_SPEECHING)
+				{
+					switch (what)
+					{
+					case ResponseCode.ERR_NOT_INIT:
+						// 尚未初始化
+						mainApplication.setTTSInit();
+						break;
+					case ResponseCode.ERR_UNKNOWN:
+						// 未知錯誤
 
-	OnPartialResult			partialResult		= new OnPartialResult()
-												{
+						break;
 
-													@Override
-													public void onPartialResult(String strResult)
-													{
+					case ResponseCode.ERR_SUCCESS:
+						// 成功
 
-														if (null != strResult && 0 < strResult.length())
-														{
-															Logs.showTrace("Partial Result: " + strResult);
-															if (strResult.contains("Google OK")
-																	|| strResult.contains("Google ok"))
-															{
-																String strReplace = strResult.replace("OK Google", "");
-																strReplace = strReplace.replace("Google OK", "");
-																strReplace = strReplace.replace("Google ok", "");
-																Logs.showTrace("Parse: " + strReplace);
-																mainApplication.speechStop();
-																httpClient.httpPostRaw(777,
-																		TARGET_HOST + PATH_API_JIEBA, strReplace);
-															}
-														}
-													}
+						String textID = message.get("TextID");
 
-												};
+						//語音強制中斷
+						if (message.get("TextStatus").equals("STOP"))
+						{
+							
+						}
+						//語音開始
+						else if (message.get("TextStatus").equals("START"))
+						{
+							
+						}
+						//語音結束
+						else if (message.get("TextStatus").equals("DONE"))
+						{
+							
+						}
+
+						break;
+					default:
+
+						break;
+
+					}
+
+				}
+
+				break;
+			default:
+
+				break;
+			}
+
+		}
+
+	};
+
+	OnClickListener itemClick = new OnClickListener()
+	{
+		@Override
+		public void onClick(View v)
+		{
+			if (v.getId() == R.id.btnSpeak)
+			{
+				// mbSpeak = mbSpeak
+				// ? false : true;
+
+				if (!mbSpeak)
+				{
+					tvSpeech.setText("");
+					mbSpeak = true;
+					progressBar.setIndeterminate(false);
+					btnSpeak.setImageResource(R.drawable.mic_on);
+					mainApplication.speechStart();
+					// handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+
+				}
+			}
+		}
+	};
+
+	OnRecognitionResult RecognitionListener = new OnRecognitionResult()
+	{
+		@Override
+		public void onRecognitionResult(int nErrorCode, SparseArray<String> listResult)
+		{
+			tvSpeech.setText("");
+			strText = "";
+			for (int i = 0; i < listResult.size(); ++i)
+			{
+				strText += listResult.get(i);
+				strText += "\n";
+			}
+
+			if (0 == nErrorCode)
+			{
+				// parse first string
+				// httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA,
+				// listResult.get(0));
+			}
+			tvSpeech.setText(strText);
+			handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+			Logs.showTrace(strText);
+			
+			
+			// if (SpeechRecognizer.ERROR_CLIENT == nErrorCode)
+			// {
+			// progressBar.setIndeterminate(false);
+			// tvSpeech.setText("無法辨識");
+			// btnSpeak.setImageResource(R.drawable.mic_on);
+			// mainApplication.speechStart();
+			// handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+			// return;
+			// }
+			//
+			// if (SpeechRecognizer.ERROR_RECOGNIZER_BUSY == nErrorCode)
+			// {
+			// return;
+			// }
+		}
+	};
+
+	OnRmsResult rmsResult = new OnRmsResult()
+	{
+
+		@Override
+		public void onRms(float fRms)
+		{
+			progressBar.setProgress((int) fRms);
+			// Logs.showTrace(String.valueOf(fRms));
+		}
+
+	};
+
+	OnPartialResult partialResult = new OnPartialResult()
+	{
+
+		@Override
+		public void onPartialResult(String strResult)
+		{
+
+			if (null != strResult && 0 < strResult.length())
+			{
+				Logs.showTrace("Partial Result: " + strResult);
+				
+				
+				
+				/********************test case Start***************************/
+				Logs.showTrace("@@@@@@Start to Speech@@@@@@@");
+				String textID = "001";
+				mainApplication.textToSpeech(textID,strResult);
+				/********************test case End***************************/
+				
+				
+				
+				
+				if (strResult.contains("Google OK") || strResult.contains("Google ok"))
+				{
+					handler.sendEmptyMessageDelayed(666, TIMEOUT_SPEECH);
+					String strReplace = strResult.replace("OK Google", "");
+					strReplace = strResult.replace("ok Google", "");
+					strReplace = strReplace.replace("Google OK", "");
+					strReplace = strReplace.replace("Google ok", "");
+					Logs.showTrace("Parse: " + strReplace);
+					httpClient.httpPostRaw(777, TARGET_HOST + PATH_API_JIEBA, strReplace);
+				}
+			}
+		}
+
+	};
 
 	@SuppressLint("HandlerLeak")
-	private Handler			handler				= new Handler()
-												{
+	private Handler handler = new Handler()
+	{
 
-													@Override
-													public void handleMessage(Message msg)
-													{
-														if (msg.what == 666)
-														{
-															mbSpeak = false;
-															btnSpeak.setImageResource(R.drawable.mic_off);
-															mainApplication.speechStop();
-															progressBar.setIndeterminate(true);
+		@Override
+		public void handleMessage(Message msg)
+		{
+			if (msg.what == 666)
+			{
+				mbSpeak = false;
+				btnSpeak.setImageResource(R.drawable.mic_off);
+				mainApplication.speechStop();
+				progressBar.setIndeterminate(true);
 
-															// restart
-															tvSpeech.setText("");
-															mbSpeak = true;
-															progressBar.setIndeterminate(false);
-															btnSpeak.setImageResource(R.drawable.mic_on);
-															mainApplication.speechStart();
-														}
+				// restart
+				tvSpeech.setText("");
+				mbSpeak = true;
+				progressBar.setIndeterminate(false);
+				btnSpeak.setImageResource(R.drawable.mic_on);
+				mainApplication.speechStart();
+			}
 
-														if (msg.what == 777)
-														{
-															try
-															{
-																JSONArray jarry = new JSONArray((String) msg.obj);
-																tvSpeech.setText(jarry.toString());
-																Logs.showTrace(jarry.toString());
-															}
-															catch (Exception e)
-															{
-																// TODO
-																// Auto-generated
-																// catch block
-																e.printStackTrace();
-																Logs.showError(e.getMessage());
-															}
+			if (msg.what == 777)
+			{
+				try
+				{
+					JSONArray jarry = new JSONArray((String) msg.obj);
+					tvSpeech.setText(jarry.toString());
+					Logs.showTrace(jarry.toString());
 
-														}
-													}
+				}
+				catch (Exception e)
+				{
+					// TODO
+					// Auto-generated
+					// catch block
+					e.printStackTrace();
+					Logs.showError(e.getMessage());
+				}
 
-												};
+			}
+		}
 
-	HttpResponseListener	httpResponse		= new HttpResponseListener()
-												{
+	};
 
-													@Override
-													public void response(int nId, int nCode, String strContent)
-													{
-														Logs.showTrace("HTTP RESPONSE - Code:" + String.valueOf(nCode)
-																+ " Content:" + strContent + " ID: "
-																+ String.valueOf(nId));
+	HttpResponseListener httpResponse = new HttpResponseListener()
+	{
 
-														if (200 == nCode)
-														{
-															Message msg = new Message();
-															msg.what = 777;
-															msg.obj = strContent;
-															handler.sendMessage(msg);
+		@Override
+		public void response(int nId, int nCode, String strContent)
+		{
+			Logs.showTrace("HTTP RESPONSE - Code:" + String.valueOf(nCode) + " Content:" + strContent + " ID: "
+					+ String.valueOf(nId));
 
-														}
-													}
+			if (200 == nCode)
+			{
+				Message msg = new Message();
+				msg.what = 777;
+				msg.obj = strContent;
+				handler.sendMessage(msg);
 
-												};
+			}
+		}
+
+	};
 }
