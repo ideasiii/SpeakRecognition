@@ -271,11 +271,14 @@ public class MainActivity extends Activity
 														if (null != strResult && 0 < strResult.length())
 														{
 															Logs.showTrace("Partial Result: " + strResult);
-															if (strResult.contains("Google OK"))
+															if (strResult.contains("Google OK")
+																	|| strResult.contains("Google ok"))
 															{
 																String strReplace = strResult.replace("OK Google", "");
 																strReplace = strReplace.replace("Google OK", "");
+																strReplace = strReplace.replace("Google ok", "");
 																Logs.showTrace("Parse: " + strReplace);
+																mainApplication.speechStop();
 																httpClient.httpPostRaw(777,
 																		TARGET_HOST + PATH_API_JIEBA, strReplace);
 															}
