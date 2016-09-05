@@ -114,6 +114,8 @@ public class VoiceRecognition implements RecognitionListener
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SECURE, false);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_WEB_SEARCH_ONLY, true);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 20000000);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 20000000);
 
 		if (!recognizerIntent.hasExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE))
 		{
@@ -199,6 +201,8 @@ public class VoiceRecognition implements RecognitionListener
 	public void onEndOfSpeech()
 	{
 		Log.i(LOG_TAG, "onEndOfSpeech");
+
+		callbackRecognitionResult(7878, null);
 	}
 
 	@Override

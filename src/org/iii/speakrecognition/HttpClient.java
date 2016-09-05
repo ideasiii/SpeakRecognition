@@ -18,6 +18,8 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import sdk.ideas.common.Logs;
+
 public class HttpClient
 {
 	private ArrayList<HttpResponseListener>	listResponseListener	= null;
@@ -293,48 +295,40 @@ public class HttpClient
 
 	private int runGET(final String strTargetURL, final String strParameters, HttpResponse httpResponse)
 	{
-		URL url;
-		HttpURLConnection connection = null;
 		httpResponse.nCode = -1;
 		String strURL = strTargetURL + "?" + strParameters;
+		Logs.showTrace("^_^ :" + strURL);
 		try
 		{
-			url = new URL(strURL);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("GET");
-			connection.setReadTimeout(mnReadTimeout);
-			connection.setConnectTimeout(mnConnectTimeout);
-			connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			connection.setRequestProperty("Content-Language", "UTF-8");
-			connection.setUseCaches(false);
-			connection.setDoInput(true);
-			connection.setDoOutput(true);
+			//=============================================//
+			URL obj = new URL(strURL);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			// optional default is GET
+			con.setRequestMethod("GET");
 
-			httpResponse.nCode = connection.getResponseCode();
-			InputStream is = connection.getInputStream();
-			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-			String line;
-			StringBuffer response = new StringBuffer();
-			while ((line = rd.readLine()) != null)
+			httpResponse.nCode = con.getResponseCode();
+			System.out.println("\nSending 'GET' request to URL : " + strURL);
+			System.out.println("Response Code : " + httpResponse.nCode);
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer response2 = new StringBuffer();
+
+			while ((inputLine = in.readLine()) != null)
 			{
-				response.append(line);
-				response.append('\r');
+				response2.append(inputLine);
 			}
-			rd.close();
+			in.close();
 
-			httpResponse.strContent = response.toString();
+			//print result
+			System.out.println(response2.toString());
+
+			httpResponse.strContent = response2.toString();
 		}
 		catch (Exception e)
 		{
 			httpResponse.strContent = e.getMessage();
 			e.printStackTrace();
-		}
-		finally
-		{
-			if (connection != null)
-			{
-				connection.disconnect();
-			}
 		}
 
 		return httpResponse.nCode;
