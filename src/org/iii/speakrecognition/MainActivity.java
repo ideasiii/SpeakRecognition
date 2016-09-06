@@ -472,7 +472,11 @@ public class MainActivity extends Activity
 
 																		if (0 < strReplace.length())
 																		{
-																			Logs.showTrace("Parse: " + strReplace);
+																			Logs.showTrace("Analtsis: " + strReplace);
+																			String strAnswer = Semantics
+																					.analysis(strReplace);
+																			Logs.showTrace("Answer: " + strAnswer);
+																			mainApplication.textToSpeech(textID, strAnswer);
 																			httpClient.httpPostRaw(777,
 																					TARGET_HOST + PATH_API_JIEBA,
 																					strReplace);
@@ -516,10 +520,8 @@ public class MainActivity extends Activity
 																				(String) msg.obj);
 																		tvSpeech.setText(jarry.toString());
 																		Logs.showTrace(jarry.toString());
-																		String strAnswer = Semantics
-																				.parser((String) msg.obj);
-																		Logs.showTrace("Answer: " + strAnswer);
-																		mainApplication.textToSpeech("001", strAnswer);
+																		
+																		//mainApplication.textToSpeech("001", strAnswer);
 																	}
 																	catch (Exception e)
 																	{

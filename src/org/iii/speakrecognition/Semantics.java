@@ -6,6 +6,28 @@ import org.json.JSONObject;
 
 public abstract class Semantics
 {
+	public static String analysis(String strInput)
+	{
+		String strResult = "無法分析語意";
+		if (null != strInput && 0 < strInput.length())
+		{
+			if (strInput.contains("叫") && strInput.contains("車"))
+			{
+				return SemanticsTaxi.semantics(strInput);
+			}
+			else if (strInput.contains("點") && strInput.contains("餐"))
+			{
+				return SemanticsOrderFood.semantics(strInput);
+			}
+			else if (strInput.contains("播") && strInput.contains("歌"))
+			{
+				return SemanticsMusic.semantics(strInput);
+			}
+
+		}
+		return strResult;
+	}
+
 	public static String parser(String strInput)
 	{
 		String strResult = "無法分析語意";
