@@ -21,7 +21,7 @@ public class VoiceRecognition implements RecognitionListener
 	private OnRecognitionResult		RecognitionResult	= null;
 	private OnRmsResult				rmsResult			= null;
 	private OnPartialResult			partialResult		= null;
-	private Context					theContext			= null;
+	private static Context			theContext			= null;
 	static float					fSlienceSum			= 0;
 
 	/**
@@ -106,16 +106,17 @@ public class VoiceRecognition implements RecognitionListener
 		speech = SpeechRecognizer.createSpeechRecognizer(context);
 		speech.setRecognitionListener(this);
 		recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
+		//	recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault());
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+		recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
 		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SECURE, false);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_WEB_SEARCH_ONLY, true);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 20000000);
-		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 20000000);
+		//recognizerIntent.putExtra(RecognizerIntent.EXTRA_WEB_SEARCH_ONLY, true);
+		//		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000000);
+		//		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000000);
+		//		recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000000);
 
 		if (!recognizerIntent.hasExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE))
 		{
@@ -142,7 +143,7 @@ public class VoiceRecognition implements RecognitionListener
 		Log.i(LOG_TAG, "speech start");
 	}
 
-	public void stop()
+	public static void stop()
 	{
 		if (speech != null)
 		{
@@ -151,7 +152,7 @@ public class VoiceRecognition implements RecognitionListener
 		}
 	}
 
-	public void destroy()
+	public static void destroy()
 	{
 		if (speech != null)
 		{
@@ -201,8 +202,8 @@ public class VoiceRecognition implements RecognitionListener
 	public void onEndOfSpeech()
 	{
 		Log.i(LOG_TAG, "onEndOfSpeech");
-
-		callbackRecognitionResult(7878, null);
+		speech.startListening(recognizerIntent);
+		//callbackRecognitionResult(7878, null);
 	}
 
 	@Override
@@ -211,7 +212,7 @@ public class VoiceRecognition implements RecognitionListener
 		String errorMessage = getErrorText(error);
 		Log.d(LOG_TAG, "FAILED " + errorMessage);
 		SparseArray<String> listResult = new SparseArray<String>();
-		listResult.put(0, "無法辨識");
+		listResult.put(0, "");
 		listResult.put(1, errorMessage);
 		callbackRecognitionResult(error, listResult);
 	}
@@ -263,7 +264,7 @@ public class VoiceRecognition implements RecognitionListener
 
 	}
 
-	public static String getErrorText(int errorCode)
+	public String getErrorText(int errorCode)
 	{
 		String message = "無法辨識";
 		switch (errorCode)
@@ -281,15 +282,23 @@ public class VoiceRecognition implements RecognitionListener
 			message = "Network timeout";
 			break;
 		case SpeechRecognizer.ERROR_CLIENT:
+			message = "Client Error";
+			callbackRecognitionResult(7878, null);
+			break;
 		case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
+			message = "Recognizer Busy";
+			callbackRecognitionResult(7878, null);
+			break;
 		case SpeechRecognizer.ERROR_NO_MATCH:
 			message = "無法辨識";
 			break;
 		case SpeechRecognizer.ERROR_SERVER:
 			message = "error from server";
+			callbackRecognitionResult(7878, null);
 			break;
 		case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-			message = "No speech input";
+			message = "speech input timeout";
+			callbackRecognitionResult(7878, null);
 			break;
 		default:
 			message = "Didn't understand, please try again.";

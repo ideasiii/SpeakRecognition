@@ -477,8 +477,7 @@ public class MainActivity extends Activity
 																					TARGET_HOST + PATH_API_JIEBA,
 																					strReplace);
 
-																			mainApplication.textToSpeech(textID,
-																					strReplace);
+																			//mainApplication.textToSpeech(textID, strReplace);
 																		}
 																	}
 																}
@@ -512,19 +511,18 @@ public class MainActivity extends Activity
 																{
 																	try
 																	{
-																		Logs.showTrace(
-																				"@_@ JSONArray ################");
+
 																		JSONArray jarry = new JSONArray(
 																				(String) msg.obj);
 																		tvSpeech.setText(jarry.toString());
 																		Logs.showTrace(jarry.toString());
-
+																		String strAnswer = Semantics
+																				.parser((String) msg.obj);
+																		Logs.showTrace("Answer: " + strAnswer);
+																		mainApplication.textToSpeech("001", strAnswer);
 																	}
 																	catch (Exception e)
 																	{
-																		// TODO
-																		// Auto-generated
-																		// catch block
 																		e.printStackTrace();
 																		Logs.showError(e.getMessage());
 																	}
@@ -535,8 +533,7 @@ public class MainActivity extends Activity
 																{
 																	try
 																	{
-																		Logs.showTrace(
-																				"@_@ JSONObject ################");
+
 																		JSONObject jobj = new JSONObject(
 																				(String) msg.obj);
 																		tvSpeech.setText(jobj.toString());
