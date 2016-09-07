@@ -15,9 +15,9 @@ import sdk.ideas.tool.speech.tts.TextToSpeechHandler;
 public class MainApplication extends Application
 {
 
-	private VoiceRecognition voice = null;
-	private RuntimePermissionHandler mRuntimePermissionHandler = null;
-	private TextToSpeechHandler mTextToSpeechHandler = null;
+	private VoiceRecognition			voice						= null;
+	private RuntimePermissionHandler	mRuntimePermissionHandler	= null;
+	private TextToSpeechHandler			mTextToSpeechHandler		= null;
 
 	@Override
 	public void onCreate()
@@ -26,6 +26,8 @@ public class MainApplication extends Application
 		super.onCreate();
 
 		voice = new VoiceRecognition(this.getApplicationContext());
+		voice.init(this.getApplicationContext());
+
 		mTextToSpeechHandler = new TextToSpeechHandler(this);
 	}
 
@@ -48,23 +50,23 @@ public class MainApplication extends Application
 		mRuntimePermissionHandler.startRequestPermissions();
 
 	}
-	
+
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
 	{
 		mRuntimePermissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
 	}
-	
-	public void setTTSOnCallbackResultListener( OnCallbackResult OnCallbackResultListener)
+
+	public void setTTSOnCallbackResultListener(OnCallbackResult OnCallbackResultListener)
 	{
 		mTextToSpeechHandler.setOnCallbackResultListener(OnCallbackResultListener);
 	}
-	
+
 	public void setTTSInit()
 	{
 		mTextToSpeechHandler.init();
 	}
-	
-	public void textToSpeech(String textID,String text)
+
+	public void textToSpeech(String textID, String text)
 	{
 		mTextToSpeechHandler.textToSpeech(text, textID);
 	}
@@ -101,6 +103,11 @@ public class MainApplication extends Application
 	public void speechStart()
 	{
 		voice.start();
+	}
+
+	public void speechReStart()
+	{
+		voice.reStart();
 	}
 
 	public void speechStop()
