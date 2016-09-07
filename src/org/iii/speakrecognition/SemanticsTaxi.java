@@ -10,9 +10,11 @@ public abstract class SemanticsTaxi
 		String strResult = "已幫您叫車到";
 
 		int nIndex = strInput.indexOf("我在");
-		String strLocation = strInput.substring(nIndex + 2);
-
-		strResult += strLocation;
+		if (-1 == nIndex)
+		{
+			String strLocation = strInput.substring(nIndex + 2);
+			strResult += strLocation;
+		}
 
 		return strResult;
 	}

@@ -15,7 +15,8 @@ public abstract class Semantics
 			{
 				return SemanticsTaxi.semantics(strInput);
 			}
-			else if (strInput.contains("點") && strInput.contains("餐"))
+			else if (strInput.contains("點餐") || strInput.contains("叫餐") || strInput.contains("我要吃")
+					|| strInput.contains("我想要吃") || strInput.contains("我想吃"))
 			{
 				return SemanticsOrderFood.semantics(strInput);
 			}
